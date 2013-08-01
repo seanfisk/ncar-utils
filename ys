@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+
+readonly LOGIN_NODE_RANGE='1-6'
+
+usage() {
+	exe=${0##*/}
+	cat >&2 <<EOF
+Usage:
+
+    $exe
+    $exe -- ARGS...
+        Log in to yellowstone.ucar.edu; let it choose your login node
+
+    $exe NODE_NUM ARGS...
+        Log in to a specific Yellowstone node
+
+    $exe -h
+    $exe --help
+        Print this help
+
+NODE_NUM    node to login, can be $LOGIN_NODE_RANGE
+ARGS        extra arguments passed to ssh
+EOF
+}
+
+if [[ $# -gt 0 && ( $1 == '-h' || $1 == '--help' ) ]]; then
+	usage
+	exit 0
+elif [[ $# -eq 0 || $1 == '--' ]]; then
+	readonly HOST='yellowstone'
+	if [[ $# -gt 0 ]]; then
+		# The rest of the arguments get passed to ssh.
+		shift
+	fi
+else
+	case $1 in
+		[$LOGIN_NODE_RANGE])
+			readonly HOST="yslogin$1"
+			shift
+			;;
+		[0-9]*)
+			echo -e "Only login nodes $LOGIN_NODE_RANGE are available.\n" >&2
+			usage
+			exit 1
+			;;
+		*)
+			usage
+			exit 1
+	esac
+fi
+
+readonly SSH_CMD=(ssh "$@" "$HOST.ucar.edu")
+echo "${SSH_CMD[@]}"
+"${SSH_CMD[@]}"
